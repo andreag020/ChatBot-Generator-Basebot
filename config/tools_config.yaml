@@ -1,0 +1,75 @@
+tools:
+  - name: register_lead
+    description: >
+      Registers the interest of a company or individual in our services.
+      Use this when the client wants a quote, asks for more detailed info,
+      or identifies themselves as an interested prospect.
+    endpoint: "mock:register_lead"
+    method: POST
+    timeout: 8.0
+    parameters:
+      - name: nombre
+        type: string
+        description: "Nombre completo del contacto"
+        required: true
+      - name: empresa
+        type: string
+        description: "Nombre de la empresa u organización"
+        required: true
+      - name: servicio_interes
+        type: string
+        description: "Servicio o servicios de interés"
+        required: true
+        enum:
+          - "Catering Industrial/Sitios Remotos"
+          - "Catering Empresarial"
+          - "Catering Hospitalario"
+          - "Catering Educativo"
+          - "Catering Eventos"
+          - "Limpieza y Desinfección"
+          - "Lavandería"
+          - "Mantenimiento (Praserv)"
+          - "Múltiples servicios"
+      - name: numero_personas
+        type: string
+        description: "Número aproximado de personas o alcance del servicio"
+        required: false
+      - name: telefono
+        type: string
+        description: "Número de teléfono o WhatsApp del contacto"
+        required: false
+      - name: notas
+        type: string
+        description: "Información adicional relevante sobre el requerimiento"
+        required: false
+
+  - name: schedule_meeting
+    description: >
+      Schedules a meeting between the prospect and the commercial team.
+      Use this when the client confirms they want to meet or receive a visit
+      from the commercial team.
+    endpoint: "mock:schedule_meeting"
+    method: POST
+    timeout: 8.0
+    parameters:
+      - name: nombre
+        type: string
+        description: "Nombre del contacto"
+        required: true
+      - name: empresa
+        type: string
+        description: "Empresa del contacto"
+        required: true
+      - name: fecha_preferida
+        type: string
+        description: "Fecha o rango de fechas preferidas para la reunión"
+        required: false
+      - name: modalidad
+        type: string
+        description: "Modalidad preferida de reunión"
+        required: false
+        enum: ["Presencial en nuestras instalaciones", "Visita a sus instalaciones", "Videollamada"]
+      - name: telefono
+        type: string
+        description: "Teléfono de contacto"
+        required: true

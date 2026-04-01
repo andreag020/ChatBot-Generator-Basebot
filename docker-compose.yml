@@ -1,0 +1,8 @@
+services:
+  basebot:
+    build: .
+    container_name: basebot
+    env_file:
+      - .env
+    ports:
+      - "8001:8000"
