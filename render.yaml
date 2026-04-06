@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: virtual-whatsapp-assistant
+    runtime: docker
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: OPENROUTER_API_KEY
+        sync: false
+        # The user will be prompted to supply this securely during deployment
+      - key: BOT_PAYLOAD_B64
+        sync: false
+        # The user will be prompted to paste their configuration array here
+      - key: WHATSAPP_TOKEN
+        sync: false
+        # WhatsApp Permanent Access Token
+      - key: WHATSAPP_PHONE_ID
+        sync: false
+        # WhatsApp Phone Number ID

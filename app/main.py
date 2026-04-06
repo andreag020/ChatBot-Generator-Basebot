@@ -22,6 +22,54 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ---------------------------------------------------------
+# Cloud Deploy Bootstrap via BOT_PAYLOAD_B64
+# ---------------------------------------------------------
+import os
+import json
+import base64
+import yaml
+from urllib.parse import unquote
+
+payload_b64 = os.getenv("BOT_PAYLOAD_B64")
+if payload_b64:
+    try:
+        logger.info("BOT_PAYLOAD_B64 detected. Bootstrapping configuration...")
+        
+        # Fix padding if needed
+        padding = len(payload_b64) % 4
+        if padding > 0:
+            payload_b64 += "=" * (4 - padding)
+            
+        decoded_json_str = base64.b64decode(payload_b64).decode("utf-8")
+        payload = json.loads(unquote(decoded_json_str)) if "%" in decoded_json_str else json.loads(decoded_json_str)
+        
+        deploy_config = payload.pop("deploy", {})
+        payload.pop("locale", None)
+        
+        # Override dynamic settings
+        if "provider" in deploy_config:
+            settings.AI_PROVIDER = deploy_config["provider"]
+        if "model" in deploy_config:
+            settings.AI_MODEL = deploy_config["model"]
+            settings.OPENROUTER_MODEL = deploy_config["model"]
+            
+        if "byoe_url" in deploy_config and deploy_config["byoe_url"]:
+            settings.OPENROUTER_BASE_URL = deploy_config["byoe_url"]
+            
+        if "verify_token" in deploy_config:
+            settings.WHATSAPP_VERIFY_TOKEN = deploy_config["verify_token"]
+            
+        # Write the YAML configuration
+        os.makedirs("config", exist_ok=True)
+        with open("config/bot_config.yaml", "w", encoding="utf-8") as f:
+            yaml.dump(payload, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+            
+        logger.info("Successfully applied BOT_PAYLOAD_B64 to memory and bot_config.yaml")
+    except Exception as e:
+        logger.error(f"Failed to bootstrap BOT_PAYLOAD_B64: {e}")
+# ---------------------------------------------------------
+
 ai_engine_instance = AIEngine()
 session_store = SessionStore()
 processed_store = ProcessedMessageStore()
