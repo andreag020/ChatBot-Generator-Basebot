@@ -52,6 +52,18 @@ if payload_b64:
             settings.AI_PROVIDER = deploy_config["provider"]
             logger.info("[BOOTSTRAP] AI_PROVIDER set to: %s", settings.AI_PROVIDER)
         if "model" in deploy_config:
+            # Auto-upgrade deprecated model names
+            DEPRECATED_MODELS = {
+                "claude-3-haiku-20240307": "claude-3-5-haiku-20241022",
+            }
+            model_name = deploy_config["model"]
+            if model_name in DEPRECATED_MODELS:
+                new_model = DEPRECATED_MODELS[model_name]
+                logger.warning(
+                    "[BOOTSTRAP] Deprecated model '%s' auto-upgraded to '%s'",
+                    model_name, new_model,
+                )
+                deploy_config["model"] = new_model
             settings.AI_MODEL = deploy_config["model"]
             settings.OPENROUTER_MODEL = deploy_config["model"]
             logger.info("[BOOTSTRAP] AI_MODEL set to: %s", settings.AI_MODEL)
