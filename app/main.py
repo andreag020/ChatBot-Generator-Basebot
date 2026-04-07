@@ -50,9 +50,11 @@ if payload_b64:
         # Override dynamic settings
         if "provider" in deploy_config:
             settings.AI_PROVIDER = deploy_config["provider"]
+            logger.info("[BOOTSTRAP] AI_PROVIDER set to: %s", settings.AI_PROVIDER)
         if "model" in deploy_config:
             settings.AI_MODEL = deploy_config["model"]
             settings.OPENROUTER_MODEL = deploy_config["model"]
+            logger.info("[BOOTSTRAP] AI_MODEL set to: %s", settings.AI_MODEL)
             
         if "byoe_url" in deploy_config and deploy_config["byoe_url"]:
             settings.OPENROUTER_BASE_URL = deploy_config["byoe_url"]
@@ -66,11 +68,15 @@ if payload_b64:
             yaml.dump(payload, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
             
         logger.info("Successfully applied BOT_PAYLOAD_B64 to memory and bot_config.yaml")
+        logger.info("[BOOTSTRAP] Final effective settings -> AI_PROVIDER=%s | AI_MODEL=%s | ANTHROPIC_KEY_SET=%s",
+                    settings.AI_PROVIDER, settings.AI_MODEL, bool(settings.ANTHROPIC_API_KEY))
     except Exception as e:
         logger.error(f"Failed to bootstrap BOT_PAYLOAD_B64: {e}")
 # ---------------------------------------------------------
 
+logger.info("[STARTUP] Initializing AIEngine with provider=%s model=%s", settings.AI_PROVIDER, settings.AI_MODEL)
 ai_engine_instance = AIEngine()
+logger.info("[STARTUP] AIEngine ready. engine.provider=%s | client_set=%s", ai_engine_instance.provider, ai_engine_instance.anthropic_client is not None)
 session_store = SessionStore()
 processed_store = ProcessedMessageStore()
 

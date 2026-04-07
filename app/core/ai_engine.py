@@ -32,6 +32,7 @@ class AIEngine:
         phone_number: str = "",
     ) -> tuple[str, list[dict]]:
         history = history or []
+        logger.info("[PROCESS] provider=%s | message_len=%d", self.provider, len(user_message))
         try:
             if self.provider == "openrouter":
                 return await self._process_with_openrouter(user_message, history, phone_number)
