@@ -54,7 +54,8 @@ if payload_b64:
         if "model" in deploy_config:
             # Auto-upgrade deprecated model names
             DEPRECATED_MODELS = {
-                "claude-3-haiku-20240307": "claude-3-5-haiku-20241022",
+                "claude-3-haiku-20240307": "claude-haiku-4-5-20251001",
+                "claude-3-5-haiku-20241022": "claude-haiku-4-5-20251001",
             }
             model_name = deploy_config["model"]
             if model_name in DEPRECATED_MODELS:
