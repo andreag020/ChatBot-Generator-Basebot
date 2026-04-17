@@ -4,7 +4,8 @@ from fastapi.responses import PlainTextResponse, JSONResponse
 
 from app.core.ai_engine import AIEngine
 from app.core.config import settings
-from app.core.session import SessionStore, ProcessedMessageStore
+from app.core.handoff import evaluate_handoff, handoff_notifications_enabled, send_handoff_notification
+from app.core.session import HandoffNotificationStore, SessionStore, ProcessedMessageStore
 from app.core.whatsapp import send_whatsapp_message
 from app.routers import admin as admin_router
 from fastapi.middleware.cors import CORSMiddleware
@@ -92,6 +93,7 @@ ai_engine_instance = AIEngine()
 logger.info("[STARTUP] AIEngine ready. engine.provider=%s | client_set=%s", ai_engine_instance.provider, ai_engine_instance.anthropic_client is not None)
 session_store = SessionStore()
 processed_store = ProcessedMessageStore()
+handoff_notification_store = HandoffNotificationStore()
 
 import app.core.ai_engine as _ae_module
 _ae_module.ai_engine_instance = ai_engine_instance
@@ -161,8 +163,42 @@ async def _process_message(wa_id: str, user_text: str):
         response_text, updated_history = await ai_engine_instance.process(
             user_message=user_text, history=history, phone_number=wa_id,
         )
+        current_config = ai_engine_instance.prompt_builder.current_config
         if updated_history is not None:
             session_store.set(wa_id, updated_history)
         await send_whatsapp_message(wa_id, response_text)
+        decision = evaluate_handoff(
+            current_config,
+            user_message=user_text,
+            response_text=response_text,
+        )
+        if decision:
+            logger.info(
+                "Handoff decision created: phone=%s reason=%s matched_value=%s notify_enabled=%s",
+                wa_id,
+                decision.reason,
+                decision.matched_value,
+                handoff_notifications_enabled(current_config),
+            )
+        else:
+            logger.info("No handoff decision created for phone=%s", wa_id)
+        if (
+            decision
+            and handoff_notifications_enabled(current_config)
+            and handoff_notification_store.can_send(wa_id)
+        ):
+            handoff_notification_store.mark_sent(wa_id)
+            await send_handoff_notification(
+                current_config,
+                phone_number=wa_id,
+                user_message=user_text,
+                response_text=response_text,
+                history=updated_history,
+                decision=decision,
+            )
+        elif decision and not handoff_notifications_enabled(current_config):
+            logger.info("Handoff decision not notified: notifications disabled or recipients missing for phone=%s", wa_id)
+        elif decision and not handoff_notification_store.can_send(wa_id):
+            logger.info("Handoff decision not notified: cooldown active for phone=%s", wa_id)
     except Exception:
         logger.exception("Error in background task for wa_id=%s", wa_id)

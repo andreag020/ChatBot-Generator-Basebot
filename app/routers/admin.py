@@ -12,6 +12,7 @@ Set ADMIN_TOKEN in .env (min 32 chars recommended).
 
 import asyncio
 import logging
+import re
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -28,6 +29,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 _write_lock = asyncio.Lock()
 BACKUP_DIR = Path("config/backups")
 MAX_BACKUPS = 10
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 class BusinessConfig(BaseModel):
@@ -68,8 +70,32 @@ class ObjectionGuide(BaseModel):
 
 class HandoffConfig(BaseModel):
     enabled: bool = True
+    notify_team: bool = False
     message: str = Field(default="", max_length=1000)
     triggers: list[str] = Field(default_factory=list)
+    notification_emails: list[str] = Field(default_factory=list, max_length=10)
+
+    @field_validator("notification_emails", mode="before")
+    @classmethod
+    def normalize_notification_emails(cls, v):
+        if not isinstance(v, list):
+            return []
+
+        emails: list[str] = []
+        invalid: list[str] = []
+        for item in v:
+            email = str(item or "").strip().lower()
+            if not email:
+                continue
+            if not EMAIL_PATTERN.match(email):
+                invalid.append(email)
+                continue
+            if email not in emails:
+                emails.append(email)
+
+        if invalid:
+            raise ValueError(f"Invalid notification email(s): {', '.join(invalid)}")
+        return emails
 
 
 class FallbackConfig(BaseModel):
@@ -108,6 +134,11 @@ class BotConfigPayload(BaseModel):
     def normalize_handoff(cls, v):
         if isinstance(v, dict):
             v["triggers"] = [item.strip() for item in v.get("triggers", []) if isinstance(item, str) and item.strip()]
+            v["notification_emails"] = [
+                str(item).strip()
+                for item in v.get("notification_emails", [])
+                if str(item).strip()
+            ]
         return v
 
 

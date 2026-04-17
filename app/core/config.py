@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     # Admin — número que recibe alertas (sin + ni espacios)
     ADMIN_WHATSAPP_NUMBER: str = ""
 
+    # Team handoff email notifications
+    HANDOFF_EMAIL_PROVIDER: str = "resend"
+    HANDOFF_EMAIL_API_KEY: str = ""
+    HANDOFF_EMAIL_FROM: str = ""
+
     # AI provider
     AI_PROVIDER: str = "openrouter"  # openrouter | ollama | anthropic
     AI_MODEL: str = "openrouter/free"

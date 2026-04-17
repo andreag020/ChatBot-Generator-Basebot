@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 SESSION_TTL_MINUTES = 30
 MAX_HISTORY_MESSAGES = settings.HISTORY_MAX_MESSAGES
 PROCESSED_MESSAGE_TTL_MINUTES = 15
+HANDOFF_NOTIFICATION_TTL_MINUTES = 30
 
 
 class SessionStore:
@@ -74,3 +75,26 @@ class ProcessedMessageStore:
             del self._processed[k]
         if expired:
             logger.info("Evicted %s processed message ids", len(expired))
+
+
+class HandoffNotificationStore:
+    """Cooldown store to avoid duplicate human follow-up alerts."""
+
+    def __init__(self):
+        self._sent: dict[str, datetime] = {}
+
+    def can_send(self, phone: str) -> bool:
+        self._evict_expired()
+        return phone not in self._sent
+
+    def mark_sent(self, phone: str):
+        self._evict_expired()
+        self._sent[phone] = datetime.now()
+
+    def _evict_expired(self):
+        cutoff = datetime.now() - timedelta(minutes=HANDOFF_NOTIFICATION_TTL_MINUTES)
+        expired = [k for k, v in self._sent.items() if v < cutoff]
+        for k in expired:
+            del self._sent[k]
+        if expired:
+            logger.info("Evicted %s handoff notification cooldowns", len(expired))

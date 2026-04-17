@@ -102,7 +102,9 @@ objection_guides:
 
 handoff:
   enabled: true
-  message: "Thank you for your message. I am going to notify an advisor to review your request and get in touch with you shortly."
+  notify_team: false
+  message: "Thank you for your message. Our team will review your request and get in touch with you shortly."
+  notification_emails: []
   triggers:
     - "quote"
     - "pricing"
@@ -128,5 +130,5 @@ rules:
   - "Always maintain a professional and corporate tone."
 
 fallback:
-  unknown_answer: "Thank you for your message. I will notify a commercial advisor to review your request and contact you shortly."
-  out_of_scope: "I can only assist you with information regarding our services. If you need additional help, an advisor can get in touch with you."
+  unknown_answer: "Thank you for your message. Our team will review your request and contact you shortly."
+  out_of_scope: "I can only assist you with information regarding our services. If you need additional help, our team can get in touch with you."
