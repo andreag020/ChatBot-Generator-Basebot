@@ -151,11 +151,7 @@ async def send_handoff_notification(
         f"Bot: {bot_name}\n"
         f"Business: {business_name}\n"
         f"Customer WhatsApp: {phone_number}\n"
-        f"Timestamp: {timestamp}\n"
-        f"Trigger reason: {decision.reason}\n"
-        f"Matched value: {decision.matched_value}\n\n"
-        f"Latest customer message:\n{user_message.strip() or '(empty)'}\n\n"
-        f"Bot reply shown to customer:\n{response_text.strip() or '(empty)'}\n\n"
+        f"Timestamp: {timestamp}\n\n"
         f"Recent transcript:\n{transcript_excerpt}\n"
     )
 
