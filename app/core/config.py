@@ -3,12 +3,17 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    # Generic Meta webhook
+    META_VERIFY_TOKEN: str = ""
+    META_ACCESS_TOKEN: str = ""
+    META_PAGE_ID: str = ""
+
     # WhatsApp Cloud API
     WHATSAPP_TOKEN: str = "your_whatsapp_token_here"
     WHATSAPP_PHONE_ID: str = "your_phone_id_here"
     WHATSAPP_VERIFY_TOKEN: str = "your_verify_token_here"
 
-    # Admin — número que recibe alertas (sin + ni espacios)
+    # Admin number for alerts
     ADMIN_WHATSAPP_NUMBER: str = ""
 
     # Team handoff email notifications
@@ -17,7 +22,7 @@ class Settings(BaseSettings):
     HANDOFF_EMAIL_FROM: str = ""
 
     # AI provider
-    AI_PROVIDER: str = "openrouter"  # openrouter | ollama | anthropic
+    AI_PROVIDER: str = "openrouter"  # openrouter | byoe | ollama | anthropic | gemini
     AI_MODEL: str = "openrouter/free"
 
     # OpenRouter
@@ -43,6 +48,10 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_BASE_URL: str = "https://api.anthropic.com"
 
+    # Gemini
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+
     # Ollama
     OLLAMA_BASE_URL: str = "http://ollama:11434"
     OLLAMA_MODEL: str = "qwen2:0.5b"
@@ -50,7 +59,7 @@ class Settings(BaseSettings):
     OLLAMA_THINK: bool = False
     OLLAMA_NUM_CTX: int = 8192
 
-    ADMIN_TOKEN: str = ""  # Set to a strong secret (min 32 chars)
+    ADMIN_TOKEN: str = ""
 
     # Bot identity
     BOT_NAME: str = "Virtual Assistant"
