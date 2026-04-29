@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     WHATSAPP_PHONE_ID: str = "your_phone_id_here"
     WHATSAPP_VERIFY_TOKEN: str = "your_verify_token_here"
 
-    # Admin number for alerts
+    # Admin — número que recibe alertas (sin + ni espacios)
     ADMIN_WHATSAPP_NUMBER: str = ""
 
     # Team handoff email notifications
@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     OLLAMA_THINK: bool = False
     OLLAMA_NUM_CTX: int = 8192
 
-    ADMIN_TOKEN: str = ""
+    ADMIN_TOKEN: str = ""  # Set to a strong secret (min 32 chars)
 
     # Bot identity
     BOT_NAME: str = "Virtual Assistant"
