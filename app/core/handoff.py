@@ -14,6 +14,92 @@ logger = logging.getLogger(__name__)
 
 WHITESPACE_PATTERN = re.compile(r"\s+")
 TRANSCRIPT_LIMIT = 8
+BASE_HANDOFF_TRIGGERS = (
+    "talk to a human",
+    "speak to a human",
+    "contact a human",
+    "human support",
+    "human agent",
+    "real person",
+    "talk to someone",
+    "speak to someone",
+    "contact someone",
+    "contact me",
+    "call me",
+    "call us",
+    "advisor",
+    "agent",
+    "representative",
+    "commercial team",
+    "sales team",
+    "support team",
+    "escalate",
+    "human",
+    "hablar con una persona",
+    "hablar con un humano",
+    "contactar a una persona",
+    "contactar a un humano",
+    "quiero un asesor",
+    "necesito un asesor",
+    "asesor",
+    "agente",
+    "representante",
+    "equipo comercial",
+    "equipo de ventas",
+    "equipo de soporte",
+    "contactenme",
+    "contactarme",
+    "llamenme",
+    "llamarme",
+    "humano",
+    "persona",
+)
+BASE_ESCALATION_RESPONSE_MARKERS = (
+    "i will escalate",
+    "i'll escalate",
+    "we will escalate",
+    "i will forward",
+    "i'll forward",
+    "we will forward",
+    "i will connect you",
+    "i'll connect you",
+    "we will connect you",
+    "i can help connect you",
+    "i will contact",
+    "we will contact",
+    "they will contact",
+    "will reach out",
+    "will get back to you",
+    "our team will",
+    "commercial team",
+    "sales team",
+    "support team",
+    "human advisor",
+    "human agent",
+    "representative",
+    "voy a transferir",
+    "vamos a transferir",
+    "voy a derivar",
+    "vamos a derivar",
+    "voy a escalar",
+    "vamos a escalar",
+    "voy a conectar",
+    "vamos a conectar",
+    "puedo conectarte",
+    "te pondra en contacto",
+    "se pondra en contacto",
+    "se comunicara contigo",
+    "se comunique contigo",
+    "te contactara",
+    "te contactaremos",
+    "nos pondremos en contacto",
+    "equipo comercial",
+    "equipo de ventas",
+    "equipo de soporte",
+    "un asesor",
+    "asesor se comunique",
+    "representante",
+)
 
 
 @dataclass
@@ -26,12 +112,26 @@ def _normalize_text(value: str) -> str:
     return WHITESPACE_PATTERN.sub(" ", str(value or "").strip()).lower()
 
 
+def _merge_handoff_triggers(configured: list[str]) -> list[str]:
+    merged: list[str] = []
+    seen: set[str] = set()
+    for trigger in (*BASE_HANDOFF_TRIGGERS, *configured):
+        cleaned = str(trigger or "").strip()
+        normalized = _normalize_text(cleaned)
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        merged.append(cleaned)
+    return merged
+
+
 def _get_handoff_config(config: dict[str, Any] | None) -> dict[str, Any]:
     handoff = dict((config or {}).get("handoff") or {})
     handoff["enabled"] = bool(handoff.get("enabled", False))
     handoff["notify_team"] = bool(handoff.get("notify_team", False))
     handoff["message"] = str(handoff.get("message") or "").strip()
-    handoff["triggers"] = [str(item or "").strip() for item in (handoff.get("triggers") or []) if str(item or "").strip()]
+    configured_triggers = [str(item or "").strip() for item in (handoff.get("triggers") or []) if str(item or "").strip()]
+    handoff["triggers"] = _merge_handoff_triggers(configured_triggers) if handoff["enabled"] else configured_triggers
     handoff["notification_emails"] = [
         str(item or "").strip().lower()
         for item in (handoff.get("notification_emails") or [])
@@ -67,6 +167,15 @@ def evaluate_handoff(
                 trigger,
             )
             return HandoffDecision(reason="trigger_phrase", matched_value=trigger)
+
+    for marker in BASE_ESCALATION_RESPONSE_MARKERS:
+        normalized_marker = _normalize_text(marker)
+        if normalized_marker and normalized_marker in normalized_response_text:
+            logger.info(
+                "Handoff matched by escalation response marker: matched_value=%s",
+                marker,
+            )
+            return HandoffDecision(reason="escalation_response", matched_value=marker)
 
     fallback = dict((config or {}).get("fallback") or {})
     for reason, candidate in (
@@ -113,6 +222,7 @@ async def send_handoff_notification(
     config: dict[str, Any] | None,
     *,
     phone_number: str,
+    contact_label: str = "Conversation",
     user_message: str,
     response_text: str,
     history: list[dict] | None,
@@ -146,12 +256,16 @@ async def send_handoff_notification(
     business_name = str(business.get("name") or bot_name or "Your business").strip()
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     transcript_excerpt = build_transcript_excerpt(history)
-    subject = f"[{business_name}] Human follow-up requested for {phone_number}"
+    subject = f"[{business_name}] Human follow-up requested for {contact_label.lower()}: {phone_number}"
     text = (
         f"Bot: {bot_name}\n"
         f"Business: {business_name}\n"
-        f"Customer WhatsApp: {phone_number}\n"
+        f"{contact_label}: {phone_number}\n"
         f"Timestamp: {timestamp}\n\n"
+        f"Trigger reason: {decision.reason}\n"
+        f"Matched value: {decision.matched_value}\n\n"
+        f"Latest customer message:\n{user_message.strip() or '(empty)'}\n\n"
+        f"Bot reply shown to customer:\n{response_text.strip() or '(empty)'}\n\n"
         f"Recent transcript:\n{transcript_excerpt}\n"
     )
 

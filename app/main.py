@@ -183,8 +183,7 @@ async def _maybe_send_handoff_email(
         and handoff_notifications_enabled(current_config)
         and handoff_notification_store.can_send(notification_key)
     ):
-        handoff_notification_store.mark_sent(notification_key)
-        await send_handoff_notification(
+        sent = await send_handoff_notification(
             current_config,
             phone_number=contact_value,
             contact_label=contact_label,
@@ -193,6 +192,8 @@ async def _maybe_send_handoff_email(
             history=updated_history,
             decision=decision,
         )
+        if sent:
+            handoff_notification_store.mark_sent(notification_key)
     elif decision and not handoff_notifications_enabled(current_config):
         logger.info("Handoff decision not notified: notifications disabled or recipients missing for session=%s", notification_key)
     elif decision and not handoff_notification_store.can_send(notification_key):
