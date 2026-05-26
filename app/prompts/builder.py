@@ -17,6 +17,41 @@ CORE_RULES = [
 ]
 
 
+KNOWN_CHANNEL_LABELS = {
+    "whatsapp": "WhatsApp",
+    "instagram": "Instagram",
+    "facebook": "Facebook Messenger",
+    "messenger": "Facebook Messenger",
+    "web": "web chat",
+}
+
+
+def _clean_text(value: object) -> str:
+    return str(value or "").strip()
+
+
+def _humanize_channel(value: object) -> str:
+    raw = _clean_text(value).lower()
+    if not raw:
+        return ""
+    if raw in KNOWN_CHANNEL_LABELS:
+        return KNOWN_CHANNEL_LABELS[raw]
+    return raw.replace("_", " ").replace("-", " ").title()
+
+
+def _channel_label(config: dict) -> str:
+    runtime = config.get("runtime") if isinstance(config.get("runtime"), dict) else {}
+    explicit_label = _clean_text(
+        runtime.get("channel_label")
+        or runtime.get("channel_name")
+        or runtime.get("display_channel")
+        or config.get("channel_label")
+    )
+    if explicit_label:
+        return explicit_label
+    return _humanize_channel(runtime.get("channel") or config.get("channel"))
+
+
 class PromptBuilder:
     """
     Builds the system prompt from bot_config.yaml.
@@ -84,13 +119,17 @@ class PromptBuilder:
 
         business_name = business.get("name", "Our Company")
         bot_name = business.get("bot_name", settings.BOT_NAME)
+        channel_label = _channel_label(c)
         sections: list[str] = []
 
-        sections.append(
-            f"IDENTITY:\nYou are {bot_name}, WhatsApp commercial assistant for {business_name}.\n"
+        identity = (
+            f"IDENTITY:\nYou are {bot_name}, the virtual assistant for {business_name}.\n"
             "Your function is to guide prospects and corporate clients, reply accurately using only "
             "the provided information, and escalate to a human advisor when the situation requires it."
         )
+        if channel_label:
+            identity += f"\nYou are currently assisting through {channel_label}."
+        sections.append(identity)
         sections.append(
             f"BUSINESS CONTEXT:\nName: {business_name}\n"
             f"Description: {business.get('description', '')}\n"

@@ -91,6 +91,8 @@ if payload_b64:
         runtime = dict(payload.get("runtime") or {})
         if deploy_config.get("channel"):
             runtime["channel"] = deploy_config["channel"]
+        if deploy_config.get("channel_label"):
+            runtime["channel_label"] = deploy_config["channel_label"]
         if runtime:
             payload["runtime"] = runtime
             
